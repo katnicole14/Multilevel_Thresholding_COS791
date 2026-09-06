@@ -1,4 +1,3 @@
-import numpy as np
 import math 
 import common
 
@@ -8,6 +7,9 @@ def class_tsallis_partial(class_slice, histogram, w, q):
     # histogram = the full histogram, indexed by shade value
     # w = this pile's weight (from class_weight, already built by Otsu)
     # q = the fixed dial value (e.g. 0.8), same for the whole run
+
+    if w == 0:
+        return 0.0
 
     total = 0
     for i in class_slice:
@@ -21,13 +23,11 @@ def class_tsallis_partial(class_slice, histogram, w, q):
 
 #this function takes the list of Tsallis entropies for each pile, and combines them into a single score
 def combine_classes_tsallis(S_values, q):
-    total_sum = sum(S_values)
+    terms = [1 + (1 - q) * S for S in S_values]
     product = 1
-    for S in S_values:
-        product *= S                            # the extra step Kapur does NOT have —
-#                                            # Tsallis entropy is "non-extensive",
-    correction = (1 - q) * product           # so piles can't just be added together
-    return total_sum + correction
+    for t in terms:
+        product *= t
+    return (product - 1) / (1 - q)
 
 
 def tsallis(thresholds, histogram, q):
@@ -35,7 +35,7 @@ def tsallis(thresholds, histogram, q):
 
     S_values = []
     for C in classes:
-        w = common.class_weight(C)                                # reused from Otsu/Kapur
+        w = common.class_weight(C, histogram)                     # reused from Otsu/Kapur
         S_values.append(class_tsallis_partial(C, histogram, w, q))
 
     score = combine_classes_tsallis(S_values, q)
