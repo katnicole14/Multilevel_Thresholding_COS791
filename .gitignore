@@ -2,3 +2,6 @@ __pycache__/
 *.py[cod]
 *.pyc
 .pytest_cache/
+.DS_Store
+/BDS500
+demo.py
