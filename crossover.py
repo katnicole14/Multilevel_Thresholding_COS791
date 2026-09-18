@@ -1,5 +1,5 @@
 import numpy as np
-
+from otsu.py import repair_thresholds 
 
 def crossover(target,mutant,crossover_rate,random_generator,levels= 256):
     #if theres no target or mutant array, or if they are not the same length, raise an error 
