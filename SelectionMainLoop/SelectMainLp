@@ -1,0 +1,44 @@
+#Selecton +Main Loop
+"""
+DE's selection rule (standard "greedy" selection):
+    Compare the trial vector's fitness against the ORIGINAL
+    individual it was derived from (not the whole population).
+    Keep whichever one is better; discard the other.
+"""
+
+class SelectMainLp:
+
+    def Selection(target: np.ndarray,
+    target_fitness: float,
+    trial: np.ndarray,
+    trial_fitness: float,
+    maximize: bool = True,
+) -> tuple[np.ndarray, float]:
+    """
+    Greedy one-to-one DE selection.
+
+    Parameters
+    ----------
+    target : the original individual (current population member)
+    target_fitness : its already-computed fitness value
+    trial : the candidate produced by mutation + crossover
+    trial_fitness : the trial's fitness value
+    maximize : True for Otsu/Kapur/Tsallis (we want to MAXIMIZE variance/entropy)
+
+    Returns
+    -------
+    (winner_vector, winner_fitness) -- whichever of target/trial is better.
+    Ties go to the trial (standard DE convention -- helps exploration).
+    """
+    if maximize:
+        if trial_fitness >= target_fitness:
+            return trial, trial_fitness
+        else:
+            return target, target_fitness
+    else:
+        if trial_fitness <= target_fitness:
+            return trial, trial_fitness
+        else:
+            return target, target_fitness
+
+  
