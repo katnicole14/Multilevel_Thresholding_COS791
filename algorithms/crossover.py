@@ -1,4 +1,4 @@
-from Objective_functions.Otsu import repair_thresholds
+from Objective_functions.otsu import repair_thresholds
 
 
 def crossover(
