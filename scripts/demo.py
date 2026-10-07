@@ -3,15 +3,16 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parent / "Objective_functions"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "Objective_functions"))
 
-import image_utils
+from Histogram import image_utils
 from otsu import otsu_fitness, precompute_cumulative
 from Kapur_implementation import kapur_entropy
 from tsallis import tsallis
 
 # 1. Load image and build PDF
-name, gray, hist, pdf = next(image_utils.iter_dataset_images("./BDS500"))
+name, gray, hist, pdf = next(image_utils.iter_dataset_images("data/BDS500"))
 P, S = precompute_cumulative(pdf)
 
 # 2. Test threshold vector for K=3

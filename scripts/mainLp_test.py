@@ -1,4 +1,4 @@
-from SelectionMainLoop import SelectMainLP
+from algorithms import SelectMainLP
 from Objective_functions import otsu
 from Histogram import Process
 import numpy as np
@@ -8,7 +8,7 @@ if __name__ == '__main__':
     K = 3
 
     # one image at a time (your generator, or a single path for now)
-    for name, gray, hist, pdf in Process.iter_dataset_images("tests/BDS500"):
+    for name, gray, hist, pdf in Process.iter_dataset_images("data/BDS500"):
         P, S = otsu.precompute_cumulative(pdf)          # once per image
         objective = partial(otsu.otsu_fitness, P=P, S=S)
 

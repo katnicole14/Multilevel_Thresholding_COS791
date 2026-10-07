@@ -12,7 +12,7 @@ if __name__ == '__main__':
     #Checking if the Ostu implementation works
     # Use pathlib.Path for consistency with load_grayscale type hint
 
-    gray = Process.load_grayscale(Path("tests/BDS500/img1.png"))
+    gray = Process.load_grayscale(Path("data/BDS500/img1.png"))
     hist, pdf = Process.build_histogram(gray)
     P, S = otsu.precompute_cumulative(pdf)
 

@@ -1,15 +1,15 @@
 from functools import partial
 from Histogram.Process import load_grayscale, build_histogram
 from Objective_functions.otsu import precompute_cumulative, otsu_fitness, repair_thresholds
-from SelectionMainLoop.SelectMainLP import de_main_loop  # your standard DE, for comparison
-from StanadardDE.Shade import shade,l_shade
+from algorithms.SelectMainLP import de_main_loop  # your standard DE, for comparison
+from algorithms.Shade import shade,l_shade
 from pathlib import Path 
 
 import numpy as np
 
 if __name__ == "__main__":
 
-    gray = load_grayscale(Path("tests/BDS500/img1.png"))
+    gray = load_grayscale(Path("data/BDS500/img1.png"))
     hist, pdf = build_histogram(gray)
     P, S = precompute_cumulative(pdf)
     objective = partial(otsu_fitness, P=P, S=S)
