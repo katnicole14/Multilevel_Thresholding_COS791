@@ -1,6 +1,7 @@
 from functools import partial
 from Histogram.Process import load_grayscale, build_histogram
-from Objective_functions.otsu import precompute_cumulative, otsu_fitness, repair_thresholds
+from Objective_functions.otsu import precompute_cumulative, otsu_fitness
+from algorithms.threshold_repair import repair_thresholds
 from algorithms.SelectMainLP import de_main_loop  # your standard DE, for comparison
 from algorithms.Shade import shade,l_shade
 from pathlib import Path 
