@@ -118,3 +118,17 @@ def test_lshade_population_shrinks_to_minimum():
 def test_shade_archive_is_used_and_capped():
     result = run_shade(initial_population(7), OBJECTIVES["Otsu"], 7, 2000)
     assert 0 < result["archive_size"] <= 20
+
+
+@pytest.mark.parametrize("algorithm_name", ALGORITHMS)
+def test_kapur_with_empty_classes_keeps_parameters_finite(algorithm_name):
+    """Kapur gives -inf for empty classes; adaptation must not turn into NaN."""
+    # Only three bands are occupied, so many random thresholds give empty classes.
+    sparse_pdf = np.zeros(256)
+    for start, stop in [(20, 60), (100, 140), (200, 230)]:
+        sparse_pdf[start:stop] = 1.0
+    sparse_pdf /= sparse_pdf.sum()
+    objective = partial(kapur_entropy, probabilities=sparse_pdf)
+    with np.errstate(all="raise"):
+        result = ALGORITHMS[algorithm_name](initial_population(8), objective, 8, 1000)
+    assert np.isfinite(result["best_fitness"])

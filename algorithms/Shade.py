@@ -67,6 +67,20 @@ def binomial_crossover(target, mutant, CR_i, rng):
     return trial
 
 
+def improvement_weights(improvements):
+    """
+    Normalised weights |f(u) - f(x)| for the memory update.
+
+    Kapur returns -inf when a class is empty, so leaving such a solution is
+    an infinite improvement. Those successes then share the weight equally
+    (instead of producing inf/inf = NaN and corrupting the memory).
+    """
+    w = np.asarray(improvements, dtype=float)
+    if np.isinf(w).any():
+        w = np.isinf(w).astype(float)
+    return w / w.sum()
+
+
 def weighted_lehmer_mean(values, weights):
     return np.sum(weights * values ** 2) / np.sum(weights * values)
 
@@ -161,8 +175,7 @@ def run_shade(
 
         # --- update memory (only if at least one success this generation) ---
         if S_F:
-            w = np.array(S_weights)
-            w = w / w.sum()  # normalize weights
+            w = improvement_weights(S_weights)  # normalize weights
             # weighted Lehmer mean for F, weighted arithmetic mean for CR
             M_F[memory_pos] = weighted_lehmer_mean(np.array(S_F), w)
             M_CR[memory_pos] = np.sum(w * np.array(S_CR))
@@ -261,8 +274,7 @@ def run_lshade(
             archive.pop(rng.integers(0, len(archive)))
 
         if S_F:
-            w = np.array(S_weights)
-            w = w / w.sum()
+            w = improvement_weights(S_weights)
             # L-SHADE uses the weighted Lehmer mean for both F and CR
             M_F[memory_pos] = weighted_lehmer_mean(np.array(S_F), w)
             S_CR = np.array(S_CR)
