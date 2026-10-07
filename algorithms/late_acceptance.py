@@ -1,171 +1,196 @@
 """
 late_acceptance.py
 
-Late Acceptance Hill Climbing (LAHC) for multilevel thresholding.
+Late Acceptance Differential Evolution (LADE) for multilevel thresholding.
 
-LAHC is a single-solution local search metaheuristic. Instead of only
-comparing a candidate against the CURRENT solution (as classic hill
-climbing does), it also compares against the fitness recorded L
-iterations ago. This makes the search tolerant of short sequences of
-non-improving moves, which helps it escape local optima without the
-extra machinery of simulated annealing's cooling schedule.
+LADE is standard DE/rand/1/bin with DE's greedy one-to-one selection
+replaced by the Late Acceptance (LA) rule of Burke & Bykov's Late
+Acceptance Hill Climbing. A trial u_i is accepted if it is at least as
+good as EITHER its target x_i OR the fitness value stored L generations
+ago in the history buffer:
 
-Reference: Burke, E. K., & Bykov, Y. (2017). The late acceptance
-hill-climbing heuristic. European Journal of Operational Research,
-258(1), 70-78.
+    x_i^{G+1} = u_i^G   if f(u_i^G) >= f(x_i^G) or f(u_i^G) >= H[G mod L]
+                x_i^G   otherwise
+
+(written with >= because Otsu, Kapur and Tsallis are all maximised).
+After the decision, the target's current fitness is written back into
+H[G mod L]. Because H[G mod L] holds an older, usually worse, fitness,
+trials that are slightly worse than the current target can still be
+accepted, which keeps diversity and helps escape local optima.
+
+Each population member keeps its own circular history buffer, i.e. the
+buffer has shape (L, NP) and member i reads/writes column i. This is the
+direct translation of LAHC's single-solution history to a population.
+With history_length=1 the history only ever holds f(x_i), so LADE
+reduces exactly to standard greedy DE.
+
+Since accepted solutions can be worse than their parents, the best-ever
+solution is tracked separately from the population.
+
+References
+----------
+Burke, E. K., & Bykov, Y. (2017). The late acceptance hill-climbing
+heuristic. European Journal of Operational Research, 258(1), 70-78.
+Storn, R., & Price, K. (1997). Differential Evolution - a simple and
+efficient heuristic for global optimization over continuous spaces.
+Journal of Global Optimization, 11(4), 341-359.
 """
 
 import numpy as np
 
-from Objective_functions.otsu import repair_thresholds
+# Support both ``import algorithms.late_acceptance`` and running directly.
+try:
+    from .crossover import crossover
+    from .mutation import mutate
+    from .threshold_repair import repair_thresholds
+except ImportError:
+    from crossover import crossover
+    from mutation import mutate
+    from threshold_repair import repair_thresholds
 
 
-def _fix_length(thresholds, target_length, levels):
+def late_acceptance_select(trial_fitness, target_fitness, late_fitness):
     """
-    Work around a known bug in Objective_functions.otsu.repair_thresholds:
-    when perturbation collapses two thresholds onto the same value, it
-    can return fewer than `target_length` values instead of nudging them
-    apart. late_acceptance doesn't own that file, so instead of relying
-    on it to preserve length, pad back up here by inserting a value into
-    the widest remaining gap until the vector is the right length again.
+    Late Acceptance selection rule (Eq. 2 of the background, maximising).
+
+    Returns True if the trial should replace the target, i.e. if it is
+    at least as good as the target or as the fitness from L generations ago.
     """
-    values = list(np.atleast_1d(thresholds))
-
-    while len(values) < target_length:
-        bounds = [0] + values + [levels - 1]
-        gaps = [bounds[i + 1] - bounds[i] for i in range(len(bounds) - 1)]
-        widest = int(np.argmax(gaps))
-        new_value = (bounds[widest] + bounds[widest + 1]) // 2
-        new_value = max(1, min(new_value, levels - 2))
-
-        if new_value in values:
-            break  # no room left to insert a distinct value; give up
-
-        values.append(new_value)
-        values.sort()
-
-    return np.array(values[:target_length], dtype=int)
+    return trial_fitness >= target_fitness or trial_fitness >= late_fitness
 
 
-def _perturb(solution, levels, random_generator, step_size):
-    """
-    Produce a neighbour of `solution` by nudging ONE randomly chosen
-    threshold by a random integer offset in [-step_size, step_size],
-    then repairing it back into a valid, sorted, duplicate-free vector
-    of the same length as `solution`.
-    """
-    neighbour = np.array(solution, dtype=int, copy=True)
-    target_length = len(neighbour)
-
-    position = random_generator.integers(0, target_length)
-    offset = random_generator.integers(-step_size, step_size + 1)
-    neighbour[position] += offset
-
-    repaired = repair_thresholds(neighbour, levels)
-    return _fix_length(repaired, target_length, levels)
-
-
-def late_acceptance_hill_climbing(
-    initial_solution,
-    fitness_function,
-    history_length,
-    max_iterations,
-    random_generator,
+def run_lade(
+    initial_population,
+    objective_function,
+    seed,
+    maximum_function_evaluations,
+    scale_factor=0.5,
+    crossover_rate=0.9,
+    history_length=10,
     levels=256,
-    step_size=10,
-    maximize=True,
 ):
-    """
-    Run Late Acceptance Hill Climbing starting from `initial_solution`.
+    """Run one reproducible Late Acceptance DE experiment.
 
     Parameters
     ----------
-    initial_solution : array-like
-        Starting threshold vector (length K).
-    fitness_function : callable(thresholds) -> float
-        Objective to optimise (e.g. otsu_fitness bound to an image's
-        P/S via functools.partial, or kapur_entropy bound to its pdf).
-    history_length : int
-        L, the number of past iterations' fitness values kept for
-        late acceptance comparisons. Must be >= 1.
-    max_iterations : int
-        Number of candidate moves to attempt. Must be >= 0.
-    random_generator : numpy.random.Generator
-        Source of randomness, for reproducible runs.
+    initial_population : array-like, shape (NP, K)
+        Starting threshold vectors. Repaired into valid thresholds first.
+    objective_function : callable(thresholds) -> float
+        Score to MAXIMISE (Otsu, Kapur or Tsallis bound to one image).
+    seed : int
+        Seed for numpy's default_rng, for reproducible runs.
+    maximum_function_evaluations : int
+        FE budget, shared with the other DE variants for a fair comparison.
+    scale_factor : float, default 0.5
+        DE mutation scale factor F.
+    crossover_rate : float, default 0.9
+        DE binomial crossover rate CR.
+    history_length : int, default 10
+        L, the number of generations kept in the late acceptance history.
     levels : int, default 256
-        Number of grey levels in the image (L in repair_thresholds).
-    step_size : int, default 10
-        Max absolute perturbation applied to one threshold per move.
-    maximize : bool, default True
-        True to maximise fitness (Otsu/Kapur/Tsallis all maximise),
-        False to minimise.
+        Number of grey levels in the image.
 
     Returns
     -------
-    best_solution : np.ndarray
-        Best threshold vector found.
-    best_fitness : float
-        Fitness of best_solution.
-    convergence : list[float]
-        Best-so-far fitness value after every iteration, useful for
-        convergence plots.
-
-    Raises
-    ------
-    ValueError
-        If initial_solution is empty, history_length < 1, or
-        max_iterations < 0.
+    dict with the same keys as run_jade where they apply: seed,
+    best_thresholds, best_fitness, generations, function_evaluations,
+    convergence_history (list of (FEs used, best-so-far fitness)), plus
+    late_acceptances (number of trials accepted ONLY because of the
+    late acceptance rule, i.e. worse than their target).
     """
-    if len(initial_solution) == 0:
-        raise ValueError("Initial solution array is empty.")
+    random_generator = np.random.default_rng(seed)
+    population = np.asarray(initial_population, dtype=float)
 
+    if population.ndim != 2:
+        raise ValueError("initial_population must have shape (NP, K).")
+    if len(population) < 4:
+        raise ValueError("DE/rand/1 requires at least four population members.")
     if history_length < 1:
-        raise ValueError("History length must be at least 1.")
+        raise ValueError("history_length must be at least 1.")
+    if maximum_function_evaluations < len(population):
+        raise ValueError("The FE budget must cover the initial population.")
 
-    if max_iterations < 0:
-        raise ValueError("Max iterations must be non-negative.")
+    population_size = len(population)
 
-    def is_better_or_equal(a, b):
-        return a >= b if maximize else a <= b
-
-    def is_better(a, b):
-        return a > b if maximize else a < b
-
-    target_length = len(initial_solution)
-    current_solution = _fix_length(
-        repair_thresholds(initial_solution, levels), target_length, levels
+    # Thresholds are stored as integers so every objective (Kapur indexes
+    # the histogram with them) receives valid grey levels.
+    population = np.array(
+        [repair_thresholds(row, levels) for row in population], dtype=int
     )
-    current_fitness = fitness_function(current_solution)
 
-    best_solution = current_solution.copy()
-    best_fitness = current_fitness
+    fitness_values = np.empty(population_size, dtype=float)
+    function_evaluations = 0
+    for index in range(population_size):
+        fitness_values[index] = objective_function(population[index])
+        function_evaluations += 1
 
-    # Late acceptance history: fitness values from L iterations ago.
-    fitness_history = [current_fitness] * history_length
-    convergence = []
+    # H[slot, i] = fitness of member i recorded L generations ago.
+    fitness_history = np.tile(fitness_values, (history_length, 1))
+    late_acceptances = 0
+    generation = 0
 
-    for iteration in range(max_iterations):
-        candidate_solution = _perturb(
-            current_solution, levels, random_generator, step_size
-        )
-        candidate_fitness = fitness_function(candidate_solution)
+    best_index = int(np.argmax(fitness_values))
+    best_solution = population[best_index].copy()
+    best_fitness = float(fitness_values[best_index])
+    convergence_history = [(function_evaluations, best_fitness)]
 
-        history_slot = iteration % history_length
+    while function_evaluations < maximum_function_evaluations:
+        # Synchronous update: every mutant in this generation is built from
+        # the same population, as in run_jade.
+        next_population = population.copy()
+        next_fitness = fitness_values.copy()
+        history_slot = generation % history_length
 
-        # Accept if the candidate beats either the current solution
-        # or the solution from `history_length` iterations ago.
-        if is_better_or_equal(
-            candidate_fitness, fitness_history[history_slot]
-        ) or is_better_or_equal(candidate_fitness, current_fitness):
-            current_solution = candidate_solution
-            current_fitness = candidate_fitness
+        for current_index in range(population_size):
+            if function_evaluations >= maximum_function_evaluations:
+                break
 
-        fitness_history[history_slot] = current_fitness
+            mutant = mutate(
+                population,
+                current_index,
+                scale_factor,
+                bounds=(1, levels - 2),
+                rng=random_generator,
+            )
+            trial = crossover(
+                current_solution=population[current_index],
+                mutant=mutant,
+                crossover_rate=crossover_rate,
+                random_generator=random_generator,
+                levels=levels,
+            )
+            trial = repair_thresholds(trial, levels)
+            trial_fitness = float(objective_function(trial))
+            function_evaluations += 1
 
-        if is_better(current_fitness, best_fitness):
-            best_solution = current_solution.copy()
-            best_fitness = current_fitness
+            target_fitness = fitness_values[current_index]
+            late_fitness = fitness_history[history_slot, current_index]
 
-        convergence.append(best_fitness)
+            if late_acceptance_select(trial_fitness, target_fitness, late_fitness):
+                if trial_fitness < target_fitness:
+                    late_acceptances += 1
+                next_population[current_index] = trial
+                next_fitness[current_index] = trial_fitness
 
-    return best_solution, best_fitness, convergence
+                if trial_fitness > best_fitness:
+                    best_fitness = trial_fitness
+                    best_solution = trial.copy()
+
+            # Write the member's current fitness back into H[G mod L].
+            fitness_history[history_slot, current_index] = next_fitness[current_index]
+
+        population = next_population
+        fitness_values = next_fitness
+        generation += 1
+        convergence_history.append((function_evaluations, best_fitness))
+
+    return {
+        "seed": int(seed),
+        "best_thresholds": np.asarray(best_solution).astype(int).tolist(),
+        "best_fitness": best_fitness,
+        "generations": generation,
+        "function_evaluations": function_evaluations,
+        "history_length": history_length,
+        "late_acceptances": late_acceptances,
+        "convergence_history": convergence_history,
+    }
