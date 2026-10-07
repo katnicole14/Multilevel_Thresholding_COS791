@@ -10,7 +10,7 @@ import numpy as np
 
 if __name__ == "__main__":
 
-    gray = load_grayscale(Path("data/BDS500/img1.png"))
+    gray = load_grayscale(Path("BDS500/img1.png"))
     hist, pdf = build_histogram(gray)
     P, S = precompute_cumulative(pdf)
     objective = partial(otsu_fitness, P=P, S=S)

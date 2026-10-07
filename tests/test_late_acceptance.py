@@ -125,7 +125,7 @@ def test_longer_history_accepts_worse_trials():
 
 
 def test_runs_with_otsu_on_real_image():
-    image_path = Path(__file__).resolve().parent.parent / "data" / "BDS500" / "img1.png"
+    image_path = Path(__file__).resolve().parent.parent / "BDS500" / "img1.png"
     if not image_path.exists():
         pytest.skip("BDS500 test image not available")
 
