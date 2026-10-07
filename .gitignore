@@ -7,3 +7,4 @@ __pycache__/
 demo.py
 results/check_report.md
 scripts/check_all.py
+/results
