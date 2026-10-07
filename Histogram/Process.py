@@ -1,10 +1,18 @@
+#Installing dependies
 from pathlib import Path
 from typing import Iterator, Tuple
 
+import matplotlib.pyplot as plt
+import math
+
 import numpy as np
 from PIL import Image
-
-
+"""
+DATA PREPERATION
+1. loading the dataset(Images)
+2. Converting the images to greyscale
+3. Doing a histogram
+"""
 #Method for loading a grey scale
 
 def load_grayscale(path: Path) -> np.ndarray:
@@ -30,10 +38,10 @@ def build_histogram(gray: np.ndarray, levels: int = 256) -> Tuple[np.ndarray, np
     pdf = hist.astype(np.float64) / gray.size
     return hist, pdf
 
-
 def is_ground_truth_file(path: Path) -> bool:
     """BDS500 ground-truth / ground-boundary files are suffixed '_gt'."""
     return path.stem.endswith("_gt")
+
 
 
 def iter_dataset_images(
@@ -62,21 +70,3 @@ def iter_dataset_images(
         yield path.stem, gray, hist, pdf
 
 
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-
-    # Quick sanity check over the BDS500 folder
-    for name, gray, hist, pdf in iter_dataset_images("/content/sample_data/BSDS500"):
-        fig, axes = plt.subplots(1, 2, figsize=(8, 4))
-        axes[0].imshow(gray, cmap="gray", vmin=0,vmax=255)
-        axes[0].set_title(name+"GreyScale")
-        axes[0].axis("off")
-
-        axes[1].plot(hist)
-        axes[1].set_title(name +"Histogram")
-        axes[1].set_xlabel("Intensity level")
-        axes[1].set_ylabel("Pixel Count")
-
-        plt.tight_layout()
-        plt.show()
-        print(f"{name:10s} shape={gray.shape}  sum(pdf)={pdf.sum():.4f}")

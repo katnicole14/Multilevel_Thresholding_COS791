@@ -1,7 +1,13 @@
+
+"""
+#Implementing the Otsu
+    Definition
+1. It is a technique based of between-class- variance (non-parametric threshold selection) concept and it identifies the finiest threshold by maximizing the objective value.
+"""
 import numpy as np
 
-#the threshold values
-K= [3,5,7,9,11,12]
+from algorithms.threshold_repair import repair_thresholds
+
 
 #Calculate the cumulative sum Pi{k}=sum(pi) for i in class k
 #p(i)= h(i)/(M ×N)
@@ -17,30 +23,6 @@ def precompute_cumulative(pdf: np.ndarray):
     P = np.cumsum(pdf)
     S = np.cumsum(levels * pdf)
     return P, S
-
-
-def repair_thresholds(t: np.ndarray, L: int = 256) -> np.ndarray:
-    """
-    Convert a raw DE candidate vector into a valid, strictly increasing,
-    duplicate-free set of integer thresholds in [1, L-2].
-
-    This is necessary because DE mutation/crossover produces continuous,
-    unordered, possibly out-of-bounds vectors.
-    """
-    t = np.round(t).astype(int)
-    t = np.clip(t, 1, L - 2)
-    t = np.unique(t)  # sorts AND removes duplicates
-
-    # If duplicates collapsed the count below K, nudge values apart
-    # so downstream code always gets exactly len(original) thresholds.
-    K = len(t)
-    while len(np.unique(t)) < K:
-        # simple repair: push colliding thresholds up by 1 (clipped)
-        for i in range(1, len(t)):
-            if t[i] <= t[i - 1]:
-                t[i] = min(t[i - 1] + 1, L - 2)
-    return t
-
 
 def otsu_fitness(t: np.ndarray, P: np.ndarray, S: np.ndarray, L: int = 256) -> float:
     """
@@ -72,3 +54,4 @@ def otsu_fitness(t: np.ndarray, P: np.ndarray, S: np.ndarray, L: int = 256) -> f
         sigma_b2 += omega_k * (mu_k - mu_T) ** 2
 
     return sigma_b2
+
