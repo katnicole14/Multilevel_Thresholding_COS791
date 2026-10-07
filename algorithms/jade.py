@@ -163,7 +163,7 @@ def run_jade(
     fitness, final adaptive parameters and convergence history.
     """
     random_generator = np.random.default_rng(seed)
-    population = np.asarray(initial_population, dtype=float).copy()
+    population = np.asarray(initial_population, dtype=float)
 
     if population.ndim != 2:
         raise ValueError("initial_population must have shape (NP, K).")
@@ -175,9 +175,11 @@ def run_jade(
     population_size = len(population)
 
     # Keep K unchanged while converting every initial candidate into a valid
-    # ordered set of image thresholds.
-    for index in range(population_size):
-        population[index] = repair_thresholds(population[index], levels)
+    # ordered set of image thresholds. They are stored as integers so every
+    # objective (Kapur indexes the histogram with them) gets valid grey levels.
+    population = np.array(
+        [repair_thresholds(row, levels) for row in population], dtype=int
+    )
 
     fitness_values = np.empty(population_size, dtype=float)
     function_evaluations = 0

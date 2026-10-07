@@ -1,5 +1,5 @@
 import math 
-import common
+from Objective_functions import common
 
 #this function works on the single pile, and returns the Tsallis entropy for that pile
 def class_tsallis_partial(class_slice, histogram, w, q):

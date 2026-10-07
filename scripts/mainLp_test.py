@@ -6,22 +6,20 @@ from functools import partial
 
 if __name__ == '__main__':
     K = 3
+    POP = 20
+    SEED = 0
 
     # one image at a time (your generator, or a single path for now)
     for name, gray, hist, pdf in Process.iter_dataset_images("BDS500"):
         P, S = otsu.precompute_cumulative(pdf)          # once per image
         objective = partial(otsu.otsu_fitness, P=P, S=S)
 
-        np.random.seed(0)
-        best_sol, best_fit, history = SelectMainLP.de_main_loop(
-            dims=K,
-            pop_size=20,
-            bounds=(0, 255),
-            max_generations=50,
-            objective_fn=objective,
-            seed=0,
+        initial_population = np.random.default_rng(SEED).uniform(1, 254, size=(POP, K))
+        result = SelectMainLP.run_de(
+            initial_population,
+            objective,
+            seed=SEED,
+            maximum_function_evaluations=50 * POP,
         )
 
-        thresholds = otsu.repair_thresholds(best_sol)   # the real answer
-
-        print(f"{name}: thresholds = {list(thresholds)}  fitness = {best_fit:.2f}")
+        print(f"{name}: thresholds = {result['best_thresholds']}  fitness = {result['best_fitness']:.2f}")
