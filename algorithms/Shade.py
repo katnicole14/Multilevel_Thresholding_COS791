@@ -1,12 +1,6 @@
 """
 SHADE and L-SHADE for multilevel image thresholding.
 
-SHADE: Tanabe, R., & Fukunaga, A. (2013). Success-history based parameter
-adaptation for Differential Evolution. IEEE CEC, 71-78.
-L-SHADE: Tanabe, R., & Fukunaga, A. (2014). Improving the search
-performance of SHADE using linear population size reduction. IEEE CEC,
-1658-1665.
-
 Both use DE/current-to-pbest/1 with an external archive, binomial
 crossover, and a historical memory of successful (F, CR) pairs. L-SHADE
 also shrinks the population linearly over the FE budget.
@@ -112,7 +106,7 @@ def run_shade(
     objective_function,
     seed,
     maximum_function_evaluations,
-    memory_size=None,   # H; defaults to NP as in the SHADE paper
+    memory_size=None,   # H; defaults to NP
     p=0.1,              # top p% used for pbest (e.g. 0.1 = top 10%)
     levels=256,
 ):
@@ -205,7 +199,7 @@ def run_lshade(
     seed,
     maximum_function_evaluations,
     pop_size_min=4,      # NP_min; DE/current-to-pbest/1 needs at least 4
-    memory_size=6,       # L-SHADE paper commonly uses a SMALLER memory than SHADE
+    memory_size=6,       # L-SHADE uses a SMALLER memory than SHADE
     p=0.11,
     arch_rate=2.6,       # archive capacity = round(arch_rate * NP)
     levels=256,
@@ -214,7 +208,7 @@ def run_lshade(
     Run one reproducible L-SHADE experiment: SHADE + Linear Population
     Size Reduction (LPSR) + external archive, driven by the FE budget.
 
-    NP_init is the size of initial_population (the L-SHADE paper uses
+    NP_init is the size of initial_population (L-SHADE normally uses
     18 * K). After every generation the population shrinks linearly
     towards pop_size_min by dropping the worst individuals.
     """
