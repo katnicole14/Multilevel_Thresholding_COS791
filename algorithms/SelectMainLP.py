@@ -6,10 +6,6 @@ DE's selection rule (standard "greedy" selection):
     Compare the trial vector's fitness against the ORIGINAL
     individual it was derived from (not the whole population).
     Keep whichever one is better; discard the other.
-
-Reference: Storn, R., & Price, K. (1997). Differential Evolution - a simple
-and efficient heuristic for global optimization over continuous spaces.
-Journal of Global Optimization, 11(4), 341-359.
 """
 import numpy as np
 

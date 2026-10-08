@@ -4,8 +4,8 @@ late_acceptance.py
 Late Acceptance Differential Evolution (LADE) for multilevel thresholding.
 
 LADE is standard DE/rand/1/bin with DE's greedy one-to-one selection
-replaced by the Late Acceptance (LA) rule of Burke & Bykov's Late
-Acceptance Hill Climbing. A trial u_i is accepted if it is at least as
+replaced by the Late Acceptance (LA) rule of Late Acceptance Hill
+Climbing. A trial u_i is accepted if it is at least as
 good as EITHER its target x_i OR the fitness value stored L generations
 ago in the history buffer:
 
@@ -26,14 +26,6 @@ reduces exactly to standard greedy DE.
 
 Since accepted solutions can be worse than their parents, the best-ever
 solution is tracked separately from the population.
-
-References
-----------
-Burke, E. K., & Bykov, Y. (2017). The late acceptance hill-climbing
-heuristic. European Journal of Operational Research, 258(1), 70-78.
-Storn, R., & Price, K. (1997). Differential Evolution - a simple and
-efficient heuristic for global optimization over continuous spaces.
-Journal of Global Optimization, 11(4), 341-359.
 """
 
 import numpy as np
