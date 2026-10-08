@@ -9,13 +9,7 @@ SSIM  Structural Similarity Index (Wang et al., 2004), Gaussian 11x11 window,
 U     Uniformity measure (Levine & Nazif, 1985; Sahoo et al., 1988):
       how homogeneous the grey levels are inside each class.
 
-References
-----------
-Wang, Z., Bovik, A. C., Sheikh, H. R., & Simoncelli, E. P. (2004). Image
-quality assessment: from error visibility to structural similarity. IEEE
-Transactions on Image Processing, 13(4), 600-612.
-Sahoo, P. K., Soltani, S., & Wong, A. K. C. (1988). A survey of thresholding
-techniques. Computer Vision, Graphics, and Image Processing, 41(2), 233-260.
+
 """
 
 import numpy as np
