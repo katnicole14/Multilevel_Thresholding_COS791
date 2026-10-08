@@ -18,15 +18,26 @@ DATA PREPERATION
 def load_grayscale(path: Path) -> np.ndarray:
     """
     Load an image file and convert it to 8-bit grayscale.
-
-    Uses PIL's 'L' mode conversion, which applies the standard
-    ITU-R 601-2 luma transform:
-        L = 0.299*R + 0.587*G + 0.114*B
-    Any alpha channel is dropped automatically by first forcing RGB.
     """
     img = Image.open(path).convert("RGB")   # drop alpha if present
     img = img.convert("L")                  # RGB -> grayscale, uint8
     return np.array(img, dtype=np.uint8)
+
+
+def crop_white_border(gray: np.ndarray, value: int = 255) -> np.ndarray:
+    """
+    Remove outer rows/columns that are entirely `value` (pure white).
+
+    The BDS500 copies in this project have a 5-13 px white frame that is not
+    part of the photo. Left in, it adds an artificial histogram spike at 255
+    (7-11% of all pixels) that the objectives waste a threshold on and that
+    distorts PSNR/SSIM/U. Only full rows/columns at the edges are removed.
+    """
+    rows = np.where(~np.all(gray == value, axis=1))[0]
+    cols = np.where(~np.all(gray == value, axis=0))[0]
+    if len(rows) == 0 or len(cols) == 0:
+        return gray  # completely white image: nothing sensible to crop
+    return gray[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
 
 #METHOD FOR IMPLEMENTING THE HISTOGRAM BASED ON THE FORMULA GIVEM
 def build_histogram(gray: np.ndarray, levels: int = 256) -> Tuple[np.ndarray, np.ndarray]:
