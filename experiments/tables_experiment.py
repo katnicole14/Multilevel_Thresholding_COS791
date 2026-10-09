@@ -134,7 +134,14 @@ def average_ranks(runs, metric, higher_is_better):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--results", default="results/experiment1")
+    print("Select 1 if you want experiments 1 results or 2 for experiment 2 results")
+    inputcommand= int(input())
+    if inputcommand==1:
+        parser.add_argument("--results", default="results/experiment1")
+        dataset_name = "BSD500"
+    elif inputcommand==2:
+         parser.add_argument("--results", default="results/experiment2")
+         dataset_name = "CHAOS"
     args = parser.parse_args()
 
     results_dir = REPO_ROOT / args.results
@@ -153,7 +160,7 @@ def main():
         markdown = write_markdown(to_wide(stats, decimals, best, lambda s: f"**{s}**"),
                                   title, tables_dir / f"summary_{metric}.md")
         write_latex(to_wide(stats, decimals, best, lambda s: f"\\textbf{{{s}}}"),
-                    f"{title} on BSD500", f"tab:exp1_{metric}", tables_dir / f"summary_{metric}.tex")
+                    f"{title} on {dataset_name}", f"tab:exp{inputcommand}_{metric}", tables_dir / f"summary_{metric}.tex")
         per_image(runs, metric, decimals).to_csv(tables_dir / f"per_image_{metric}.csv")
         average_ranks(runs, metric, higher_is_better).to_csv(tables_dir / f"ranks_{metric}.csv")
 

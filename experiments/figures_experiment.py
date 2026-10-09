@@ -158,11 +158,21 @@ def time_figure(runs, out):
 
 
 def main():
+    print("Select 1 if you want experiments 1 results or 2 for experiment 2 results")
+    inputcommand= int(input())
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--results", default="results/experiment1")
-    parser.add_argument("--images-dir", default="BDS500")
-    parser.add_argument("--images", nargs="*", help="images to draw (default: all in the results)")
-    parser.add_argument("--algorithm", default="L-SHADE", help="algorithm for the segmentation figures")
+    if inputcommand==1:
+        parser.add_argument("--results", default="results/experiment1")
+        parser.add_argument("--images-dir", default="BDS500")
+        parser.add_argument("--images", nargs="*", help="images to draw (default: all in the results)")
+        parser.add_argument("--algorithm", default="L-SHADE", help="algorithm for the segmentation figures")
+    elif inputcommand==2:
+        parser.add_argument("--results", default="results/experiment2")
+        parser.add_argument("--images-dir", default="CHAOS")
+        parser.add_argument("--images", nargs="*", help="images to draw (default: all in the results)")
+        parser.add_argument("--algorithm", default="L-SHADE", help="algorithm for the segmentation figures")
+        
     args = parser.parse_args()
 
     results_dir = REPO_ROOT / args.results
