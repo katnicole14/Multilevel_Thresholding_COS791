@@ -13,13 +13,14 @@ experiment can simply be started again and continues where it stopped.
 Run settings are saved to <out>/config.json (use it for the report's
 parameter table).
  
-Usage (from the repo root, DICOM slices in ./CHAOS):
+Usage (from the repo root, PNG slices in ./CHAOS):
     python experiments/run_experiment2.py                 # full experiment
     python experiments/run_experiment2.py --quick         # smoke test
     python experiments/run_experiment2.py --images IMG-0001 IMG-0002 --k 3 12 --runs 5
  
-Then build the tables and figures (copy the Experiment 1 scripts and use
-the "eta" column).
+Then build the tables and figures:
+    python experiments/tables_experiment.py --experiment 2
+    python experiments/figures_experiment.py --experiment 2
 """
  
 import argparse
@@ -167,7 +168,7 @@ def task_key(record):
 def main():
     parser = argparse.ArgumentParser(description="Experiment 2: DE variants on CHAOS MRI.")
     parser.add_argument("--images-dir", default="CHAOS")
-    parser.add_argument("--images", nargs="*", help="slice names without extension (default: all .dcm files)")
+    parser.add_argument("--images", nargs="*", help="slice names without extension (default: all .png files)")
     parser.add_argument("--k", type=int, nargs="*", default=K_LEVELS)
     parser.add_argument("--objectives", nargs="*", default=OBJECTIVES, choices=OBJECTIVES)
     parser.add_argument("--algorithms", nargs="*", default=ALGORITHMS, choices=ALGORITHMS)

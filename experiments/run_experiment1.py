@@ -17,8 +17,8 @@ Usage (from the repo root, images in ./BDS500):
     python experiments/run_experiment1.py --images img1 img2 --k 3 12 --runs 5
 
 Then build the tables and figures:
-    python experiments/tables_experiment1.py
-    python experiments/figures_experiment1.py
+    python experiments/tables_experiment.py --experiment 1
+    python experiments/figures_experiment.py --experiment 1
 """
 
 import argparse

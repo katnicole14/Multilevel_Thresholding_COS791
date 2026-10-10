@@ -1,7 +1,8 @@
 """
-tables_experiment1.py
+tables_experiment.py
 
-Builds the Experiment 1 tables from <results>/runs.jsonl:
+Builds the tables for Experiment 1 (BSD500) or Experiment 2 (CHAOS) from
+<results>/runs.jsonl:
 
   summary_<metric>.{csv,md,tex}    mean ± std over all images and runs,
                                    rows = objective x algorithm, columns = K
@@ -9,13 +10,14 @@ Builds the Experiment 1 tables from <results>/runs.jsonl:
   ranks_<metric>.csv               average rank of each algorithm per objective
                                    and K (rank 1 = best, computed per image/run)
 
-Metrics: PSNR, SSIM, Uniformity (higher is better), best fitness (higher is
-better) and run time in seconds (lower is better). In the Markdown and LaTeX
+Metrics: class separability eta (Experiment 2 only), PSNR, SSIM, Uniformity,
+best fitness (higher is better) and run time in seconds (lower is better). In the Markdown and LaTeX
 tables the best algorithm per objective and K is in bold.
 
 Usage:
-    python experiments/tables_experiment1.py
-    python experiments/tables_experiment1.py --results results/experiment1_quick
+    python experiments/tables_experiment.py --experiment 1
+    python experiments/tables_experiment.py --experiment 2
+    python experiments/tables_experiment.py --experiment 2 --results results/experiment2_quick
 """
 
 import argparse
@@ -28,6 +30,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 METRICS = {
     # column: (title, decimals, higher_is_better)
+    "eta": ("Class separability eta", 4, True),
     "psnr": ("PSNR (dB)", 2, True),
     "ssim": ("SSIM", 4, True),
     "uniformity": ("Uniformity U", 4, True),
@@ -36,6 +39,7 @@ METRICS = {
 }
 ALGORITHM_ORDER = ["DE", "JADE", "SHADE", "L-SHADE", "LADE"]
 OBJECTIVE_ORDER = ["Otsu", "Kapur", "Tsallis"]
+DATASETS = {1: "BSD500", 2: "CHAOS"}
 
 
 def load_runs(results_dir):
@@ -134,17 +138,12 @@ def average_ranks(runs, metric, higher_is_better):
 
 def main():
     parser = argparse.ArgumentParser()
-    print("Select 1 if you want experiments 1 results or 2 for experiment 2 results")
-    inputcommand= int(input())
-    if inputcommand==1:
-        parser.add_argument("--results", default="results/experiment1")
-        dataset_name = "BSD500"
-    elif inputcommand==2:
-         parser.add_argument("--results", default="results/experiment2")
-         dataset_name = "CHAOS"
+    parser.add_argument("--experiment", type=int, choices=[1, 2], required=True)
+    parser.add_argument("--results", help="default: results/experiment<N>")
     args = parser.parse_args()
+    dataset_name = DATASETS[args.experiment]
 
-    results_dir = REPO_ROOT / args.results
+    results_dir = REPO_ROOT / (args.results or f"results/experiment{args.experiment}")
     tables_dir = results_dir / "tables"
     tables_dir.mkdir(parents=True, exist_ok=True)
 
@@ -153,6 +152,8 @@ def main():
           f"{runs['run'].nunique()} runs each\n")
 
     for metric, (title, decimals, higher_is_better) in METRICS.items():
+        if metric not in runs.columns:
+            continue
         stats = summary(runs, metric)
         best = best_per_block(stats, higher_is_better, decimals)
         stats.to_csv(tables_dir / f"summary_{metric}.csv", index=False)
@@ -160,7 +161,7 @@ def main():
         markdown = write_markdown(to_wide(stats, decimals, best, lambda s: f"**{s}**"),
                                   title, tables_dir / f"summary_{metric}.md")
         write_latex(to_wide(stats, decimals, best, lambda s: f"\\textbf{{{s}}}"),
-                    f"{title} on {dataset_name}", f"tab:exp{inputcommand}_{metric}", tables_dir / f"summary_{metric}.tex")
+                    f"{title} on {dataset_name}", f"tab:exp{args.experiment}_{metric}", tables_dir / f"summary_{metric}.tex")
         per_image(runs, metric, decimals).to_csv(tables_dir / f"per_image_{metric}.csv")
         average_ranks(runs, metric, higher_is_better).to_csv(tables_dir / f"ranks_{metric}.csv")
 

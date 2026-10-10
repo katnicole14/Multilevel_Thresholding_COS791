@@ -21,7 +21,7 @@ in `BDS500/` at the repo root. Run every command from the repo root.
 | `algorithms/` | `run_de`, `run_jade`, `run_shade`, `run_lshade`, `run_lade`, shared mutation / crossover / threshold repair |
 | `Objective_functions/` | Otsu, Kapur, Tsallis |
 | `Histogram/` | image loading, white-border crop, histogram |
-| `evaluation/` | segmentation, PSNR, SSIM, Uniformity |
+| `evaluation/` | segmentation, PSNR, SSIM, Uniformity, class separability |
 | `experiments/` | master scripts that reproduce the results |
 | `scripts/` | sanity checks and demos |
 | `tests/` | pytest suite |
@@ -36,16 +36,27 @@ result["best_thresholds"], result["best_fitness"], result["convergence_history"]
 ## Experiment 1 (BSD500)
 
 ```bash
-python experiments/run_experiment1.py --quick   # smoke test, under a minute
-python experiments/run_experiment1.py           # full: 10 images x 3 objectives x 6 K x 5 algorithms x 30 runs
-python experiments/tables_experiment1.py        # mean ± std tables (CSV, Markdown, LaTeX)
-python experiments/figures_experiment1.py       # segmentation, convergence and time-vs-K figures
+python experiments/run_experiment1.py --quick              # smoke test, under a minute
+python experiments/run_experiment1.py                      # full: 10 images x 3 objectives x 6 K x 5 algorithms x 30 runs
+python experiments/tables_experiment.py --experiment 1     # mean ± std tables (CSV, Markdown, LaTeX)
+python experiments/figures_experiment.py --experiment 1    # segmentation, convergence and time-vs-K figures
 ```
 
-The full run takes about an hour on 10 cores. It appends one line per run to
-`results/experiment1/runs.jsonl` and can be stopped and restarted at any time;
-finished runs are skipped. Settings used are saved to
-`results/experiment1/config.json`.
+## Experiment 2 (CHAOS MRI)
+
+Put the 15 CHAOS MR slices (PNG) in `CHAOS/`. Segmentation quality is
+measured with class separability eta = sigma_B^2 / sigma_T^2.
+
+```bash
+python experiments/run_experiment2.py --quick
+python experiments/run_experiment2.py
+python experiments/tables_experiment.py --experiment 2
+python experiments/figures_experiment.py --experiment 2
+```
+
+Both experiments append one line per run to `results/experiment<N>/runs.jsonl`
+and can be stopped and restarted at any time; finished runs are skipped.
+Settings used are saved to `results/experiment<N>/config.json`.
 
 ## Checks
 

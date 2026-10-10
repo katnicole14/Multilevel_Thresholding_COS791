@@ -1,7 +1,8 @@
 """
-figures_experiment1.py
+figures_experiment.py
 
-Report figures for Experiment 1, built from <results>/runs.jsonl:
+Report figures for Experiment 1 (BSD500) or Experiment 2 (CHAOS), built
+from <results>/runs.jsonl:
 
   segmentation_<image>.png   original vs segmented image for each objective
                              and K (one algorithm, its median-fitness run)
@@ -10,9 +11,10 @@ Report figures for Experiment 1, built from <results>/runs.jsonl:
   time_vs_K.png              mean run time vs K per algorithm (scalability)
 
 Usage:
-    python experiments/figures_experiment1.py                      # all images
-    python experiments/figures_experiment1.py --images img1 --algorithm JADE
-    python experiments/figures_experiment1.py --results results/experiment1_quick
+    python experiments/figures_experiment.py --experiment 1
+    python experiments/figures_experiment.py --experiment 2
+    python experiments/figures_experiment.py --experiment 1 --images img1 --algorithm JADE
+    python experiments/figures_experiment.py --experiment 2 --results results/experiment2_quick
 """
 
 import argparse
@@ -81,8 +83,11 @@ def segmentation_figure(runs, image, algorithm, images_dir, out):
             ax = axes[row, col]
             ax.imshow(segment(gray, median_run["thresholds"]), cmap="gray", vmin=0, vmax=255)
             title = f"{objective}\n" if row == 0 else ""
-            ax.set_title(f"{title}PSNR {median_run['psnr']:.2f} dB · SSIM {median_run['ssim']:.3f}",
-                         fontsize=6.5, color=MUTED if row else INK)
+            if "eta" in median_run and pd.notna(median_run["eta"]):
+                score = f"η {median_run['eta']:.4f} · PSNR {median_run['psnr']:.2f} dB"
+            else:
+                score = f"PSNR {median_run['psnr']:.2f} dB · SSIM {median_run['ssim']:.3f}"
+            ax.set_title(f"{title}{score}", fontsize=6.5, color=MUTED if row else INK)
     for ax in axes.ravel():
         ax.set_xticks([]), ax.set_yticks([]), ax.grid(False)
         for spine in ax.spines.values():
@@ -158,22 +163,15 @@ def time_figure(runs, out):
 
 
 def main():
-    print("Select 1 if you want experiments 1 results or 2 for experiment 2 results")
-    inputcommand= int(input())
-
     parser = argparse.ArgumentParser()
-    if inputcommand==1:
-        parser.add_argument("--results", default="results/experiment1")
-        parser.add_argument("--images-dir", default="BDS500")
-        parser.add_argument("--images", nargs="*", help="images to draw (default: all in the results)")
-        parser.add_argument("--algorithm", default="L-SHADE", help="algorithm for the segmentation figures")
-    elif inputcommand==2:
-        parser.add_argument("--results", default="results/experiment2")
-        parser.add_argument("--images-dir", default="CHAOS")
-        parser.add_argument("--images", nargs="*", help="images to draw (default: all in the results)")
-        parser.add_argument("--algorithm", default="L-SHADE", help="algorithm for the segmentation figures")
-        
+    parser.add_argument("--experiment", type=int, choices=[1, 2], required=True)
+    parser.add_argument("--results", help="default: results/experiment<N>")
+    parser.add_argument("--images-dir", help="default: BDS500 or CHAOS")
+    parser.add_argument("--images", nargs="*", help="images to draw (default: all in the results)")
+    parser.add_argument("--algorithm", default="L-SHADE", help="algorithm for the segmentation figures")
     args = parser.parse_args()
+    args.results = args.results or f"results/experiment{args.experiment}"
+    args.images_dir = args.images_dir or {1: "BDS500", 2: "CHAOS"}[args.experiment]
 
     results_dir = REPO_ROOT / args.results
     figures_dir = results_dir / "figures"
