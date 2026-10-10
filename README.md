@@ -40,6 +40,7 @@ python experiments/run_experiment1.py --quick              # smoke test, under a
 python experiments/run_experiment1.py                      # full: 10 images x 3 objectives x 6 K x 5 algorithms x 30 runs
 python experiments/tables_experiment.py --experiment 1     # mean ± std tables (CSV, Markdown, LaTeX)
 python experiments/figures_experiment.py --experiment 1    # segmentation, convergence and time-vs-K figures
+python experiments/stats_tests.py --experiment 1           # Friedman + Wilcoxon (Holm) tests
 ```
 
 ## Experiment 2 (CHAOS MRI)
@@ -52,6 +53,7 @@ python experiments/run_experiment2.py --quick
 python experiments/run_experiment2.py
 python experiments/tables_experiment.py --experiment 2
 python experiments/figures_experiment.py --experiment 2
+python experiments/stats_tests.py --experiment 2
 ```
 
 Both experiments append one line per run to `results/experiment<N>/runs.jsonl`
